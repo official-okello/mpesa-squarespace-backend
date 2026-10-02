@@ -12,23 +12,37 @@ app.set('trust proxy', 1);
 
 app.use(express.json({ limit: '10kb' }));
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '');
+// const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '');
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, or server-to-server)
-      // if (!origin) return callback(null, true);
-      if (ALLOWED_ORIGINS===origin) {
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        'https://www.artofmusic.co.ke',
+        'https://artofmusic.co.ke'
+      ];
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.ALLOWED_ORIGINS === '*') {
         return callback(null, true);
       }
-      return callback(new Error('CORS Policy Violation: Origin not allowed.'));
+      return callback(new Error('CORS Policy Violation'));
     },
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    credentials: false
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'x-vercel-protection-bypass',
+      'x-vercel-set-bypass-cookie'
+    ],
+    optionsSuccessStatus: 200
   })
 );
+
+// Catch all OPTIONS preflight requests explicitly
+app.options('*', cors());
 
 // Rate Limiter: Prevent brute force / denial of service
 const apiLimiter = rateLimit({
