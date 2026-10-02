@@ -1,0 +1,20 @@
+{
+  "name": "mpesa-squarespace-backend",
+  "version": "1.0.0",
+  "description": "Secure M-Pesa Daraja QR & Payment Gateway for Squarespace",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
