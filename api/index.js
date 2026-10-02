@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const { configDotenv } = require('dotenv');
 require('dotenv').config();
 
 const app = express();
@@ -11,23 +12,20 @@ app.set('trust proxy', 1);
 
 app.use(express.json({ limit: '10kb' }));
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '');
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, or server-to-server)
-      if (!origin) return callback(null, true);
-      if (ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin)) {
+      // if (!origin) return callback(null, true);
+      if (ALLOWED_ORIGINS===origin) {
         return callback(null, true);
       }
       return callback(new Error('CORS Policy Violation: Origin not allowed.'));
     },
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: false
   })
 );
@@ -95,12 +93,13 @@ app.post('/api/v1/mpesa/qr/generate', async (req, res) => {
       .toUpperCase();
 
     const { token, baseUrl } = await getDarajaToken();
+    console.log("Token: " . token);
 
     const payload = {
-      MerchantName: process.env.MERCHANT_NAME || 'Art of Music',
+      MerchantName: process.env.MERCHANT_NAME,
       RefNo: sanitizedRef,
       Amount: parsedAmount,
-      TrxCode: process.env.PAYMENT_TYPE || 'PB',
+      TrxCode: process.env.PAYMENT_TYPE,
       CPI: process.env.BUSINESS_SHORT_CODE,
       Size: '300'
     };
@@ -145,9 +144,6 @@ app.post('/api/v1/mpesa/qr/generate', async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------
-// 4. ENDPOINT: PAYMENT STATUS POLLING (For Squarespace Frontend)
-// -----------------------------------------------------------------------------
 app.get('/api/v1/mpesa/qr/status', (req, res) => {
   const { ref } = req.query;
 
@@ -168,9 +164,6 @@ app.get('/api/v1/mpesa/qr/status', (req, res) => {
   return res.json({ paid: false, status: record.status });
 });
 
-// -----------------------------------------------------------------------------
-// 5. ENDPOINT: C2B WEBHOOK CONFIRMATION (From Safaricom)
-// -----------------------------------------------------------------------------
 app.post('/api/v1/mpesa/c2b/confirmation', (req, res) => {
   try {
     const c2bData = req.body;
